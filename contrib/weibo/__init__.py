@@ -43,6 +43,7 @@ url_patterns = UrlPatterns(
     Url(r'http://weibo.com/aj/mblog/mbloglist.*', 'micro_blog', MicroBlogParser),
     Url(r'http://weibo.com/aj/.+/big.*', 'forward_comment_like', ForwardCommentLikeParser),
     Url(r'http://weibo.com/\d+/info', 'user_info', UserInfoParser),
+    Url(r'http://weibo.com/p/\d+/info', 'user_info', UserInfoParser),
     Url(r'http://weibo.com/\d+/follow.*', 'follows', UserFriendParser),
     Url(r'http://weibo.com/\d+/fans.*', 'fans', UserFriendParser)
 )

@@ -124,8 +124,10 @@ class MicroBlogParser(WeiboParser):
         params['count'] = count
         params['page'] = page
         params['pre_page'] = pre_page
-        
+
         data = json.loads(br.response().read())['data']
+        from bs4.diagnose import diagnose
+        #a=diagnose(data)
         soup = beautiful_soup(data)
         finished = False
         
@@ -387,13 +389,17 @@ class UserInfoParser(WeiboParser):
             text = script.text
             if text.startswith('FM.view'):
                 text = text.strip().replace(';', '').replace('FM.view(', '')[:-1]
-                data = json.loads(text)
+                try:
+                    data = json.loads(text)
+                except ValueError, e:
+                    return [], []
+
                 domid = data['domid']
-                if domid.startswith('Pl_Official_LeftInfo__'):
+                #if domid.startswith('Pl_Official_LeftInfo__'):
+                if domid.startswith('Pl_Official_PersonalInfo__'):
                     info_soup = beautiful_soup(data['html'])
-                    info_div = info_soup.find('div', attrs={'class': 'profile_pinfo'})
-                    for block_div in info_div.find_all('div', attrs={'class': 'infoblock'}):
-                        block_title = block_div.find('form').text.strip()
+                    for block_div in info_soup.find_all('div', attrs={'class': 'WB_cardwrap S_bg2'}):
+                        block_title = block_div.find('span').text.strip()
                         if block_title == u'基本信息':
                             profile_div = block_div
                         elif block_title == u'工作信息':
@@ -402,7 +408,9 @@ class UserInfoParser(WeiboParser):
                             edu_div = block_div
                         elif block_title == u'标签信息':
                             tags_div = block_div
-                elif domid == 'Pl_Official_Header__1':
+                #elif domid == 'Pl_Official_Header__1':
+                #sina weibo udpate to v6
+                elif domid == 'Pl_Official_Header':
                     header_soup = beautiful_soup(data['html'])
                     weibo_user.info.avatar = header_soup.find('div', attrs={'class': 'pf_head_pic'})\
                                                 .find('img')['src']
@@ -513,6 +521,7 @@ class UserFriendParser(WeiboParser):
             br = self.opener.browse_open(url)
             self.logger.debug('load %s finish' % url)
             soup = beautiful_soup(br.response().read())
+
         except Exception, e:
             return self._error(url, e)
         
@@ -528,14 +537,19 @@ class UserFriendParser(WeiboParser):
         for script in soup.find_all('script'):
             text = script.text
             if text.startswith('FM.view'):
+                tmp = text
                 text = text.strip().replace(';', '').replace('FM.view(', '')[:-1]
                 data = None
                 try:
                     data = json.loads(text)
                 except ValueError, e:
-                    return self._error(url, e)
+                    #return self._error(url, e)
+                    continue
+                if 'domid' not in data:
+                    continue
                 domid = data['domid']
-                if domid.startswith('Pl_Official_LeftHisRelation__'):
+                # if domid.startswith('Pl_Official_LeftHisRelation__'):
+                if domid.startswith('Pl_Official_HisRelation__'):
                     html = beautiful_soup(data['html'])
                 if 'relate' in decodes and decodes['relate'] == 'fans':
                     is_follow = False
@@ -552,7 +566,7 @@ class UserFriendParser(WeiboParser):
         bundles = []
         ul = None
         try:
-            ul = html.find(attrs={'class': 'cnfList', 'node-type': 'userListBox'})
+            ul = html.find(attrs={'class': 'follow_list', 'node-type': 'userListBox'})
         except AttributeError, e:
             if br.geturl().startswith('http://e.weibo.com'):
                 return [], []
@@ -572,7 +586,7 @@ class UserFriendParser(WeiboParser):
                 weibo_user.follows = []
             else:
                 weibo_user.fans = []
-        for li in ul.find_all(attrs={'class': 'S_line1', 'action-type': 'itemClick'}):
+        for li in ul.find_all(attrs={'class': 'follow_item S_line2', 'action-type': 'itemClick'}):
             data = dict([l.split('=') for l in li['action-data'].split('&')])
             
             friend = Friend()
@@ -590,12 +604,12 @@ class UserFriendParser(WeiboParser):
         self.logger.debug('parse %s finish' % url)
         
         urls = []
-        pages = html.find('div', attrs={'class': 'W_pages', 'node-type': 'pageList'})
+        pages = html.find('div', attrs={'class': 'W_pages'})
         if pages is not None:
             a = pages.find_all('a')
             if len(a) > 0:
                 next_ = a[-1]
-                if next_['class'] == ['W_btn_c']:
+                if next_['class'] == ['page', 'next', 'S_txt1', 'S_line1']:
                     decodes['page'] = int(decodes.get('page', 1)) + 1
                     query_str = urllib.urlencode(decodes)
                     url = '%s?%s' % (url.split('?')[0], query_str)
