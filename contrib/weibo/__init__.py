@@ -51,16 +51,18 @@ url_patterns = UrlPatterns(
 )
 
 def get_job():
+    print sys.argv[1]
+    starts = load_start(sys.argv[1])
+    print len(starts)
     return Job('sina weibo crawler', url_patterns, MechanizeOpener, starts,
                is_bundle=True, unit_cls=WeiboUserBundle, 
                instances=instances, debug=False, user_conf=user_config,
                login_hook=login_hook)
+
 def load_start(src):
     with open(src) as fin:
         return [str(line.strip()) for line in fin]
 
-starts=[]
 if __name__ == "__main__":
     from cola.worker.loader import load_job
-    starts = load_start(sys.argv[1])
     load_job(os.path.dirname(os.path.abspath(__file__)))
