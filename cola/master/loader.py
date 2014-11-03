@@ -152,6 +152,7 @@ class MasterJobLoader(LimitionJobLoader, JobLoader):
         
     def stop(self):
         for node in self.nodes:
+            self.logger.debug('call node %s to stop' % node)
             client_call(node, 'stop', ignore=True)
         self.finish()
         
@@ -175,12 +176,15 @@ class MasterJobLoader(LimitionJobLoader, JobLoader):
                 
     def add_node(self, node):
         for node in self.nodes:
+            self.logger.debug('add node %s to nodes' % node)
             client_call(node, 'add_node', node, ignore=True)
         self.nodes.append(node)
+        self.logger.debug('run new node %s ' % node)
         client_call(node, 'run', ignore=True)
         
     def remove_node(self, node):
         for node in self.nodes:
+            self.logger.debug('remove node %s' % node)
             client_call(node, 'remove_node', node, ignore=True)
         if node in self.nodes:
             self.nodes.remove(node)
@@ -188,6 +192,7 @@ class MasterJobLoader(LimitionJobLoader, JobLoader):
     def pages(self):
         all_pages = 0
         for node in self.nodes:
+            self.logger.debug('get pages from node %s' % node)
             pages = client_call(node, 'pages', ignore=True)
             if pages is not None:
                 all_pages += int(pages)
@@ -197,8 +202,10 @@ class MasterJobLoader(LimitionJobLoader, JobLoader):
         self.ready_lock.acquire()
         
         if not self.stopped and len(self.not_registered) == 0:
+            self.logger.debug('put %s to message queue' % self.job.starts)
             self.mq_client.put(self.job.starts)
             for node in self.nodes:
+                self.logger.debug('call node %s to run' % node)
                 client_call(node, 'run')
             
         self.finish_lock.acquire()
