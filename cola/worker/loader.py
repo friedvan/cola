@@ -28,6 +28,8 @@ import random
 import socket
 import logging
 
+import redis
+
 from cola.core.mq import MessageQueue
 from cola.core.bloomfilter import FileBloomFilter
 from cola.core.rpc import client_call
@@ -44,6 +46,10 @@ BUDGET_REQUIRE = 10
 MAX_ERROR_TIMES = 5
 
 UNLIMIT_BLOOM_FILTER_CAPACITY = 1000000
+
+
+REDIS_UID = 'cola:uids'
+REDIS_CRAWLED = 'cola:crawled'
 
 class JobWorkerRunning(Exception): pass
 
@@ -130,8 +136,12 @@ class BasicWorkerJobLoader(JobLoader):
             
         self.mq = MessageQueue(self.nodes, self.local, self.rpc_server,
             copies=self.copies)
-        self.mq.init_store(mq_store_dir, mq_backup_dir, 
+        self.mq.init_store(mq_store_dir, mq_backup_dir,
                            verify_exists_hook=self._init_bloom_filter())
+
+        self.redismq = redis.Redis(host='192.168.23.132')
+
+
     
     def _release_stop_lock(self):
         try:
@@ -171,7 +181,8 @@ class BasicWorkerJobLoader(JobLoader):
         
     def stop(self):
         try:
-            self.mq.put(self.executings, force=True)
+            # self.mq.put(self.executings, force=True)
+            self.redismq.rpush(REDIS_UID, *self.executings)
             super(BasicWorkerJobLoader, self).stop()
         finally:
             self._release_stop_lock()
@@ -231,11 +242,13 @@ class BasicWorkerJobLoader(JobLoader):
                     next_urls.extend(urls)
                     urls = next_urls
                     if bundles:
-                        self.mq.put([str(b) for b in bundles if b.force is False])
-                        self.mq.put([str(b) for b in bundles if b.force is True], force=True)
+                        # self.mq.put([str(b) for b in bundles if b.force is False])
+                        # self.mq.put([str(b) for b in bundles if b.force is True], force=True)
+                        self.redismq.rpush(REDIS_UID, *[str(b) for b in bundles if b.force is False])
+                        # self.redismq.rpush(REDIS_KEY, [str(b) for b in bundles if b.force is True])
                     if hasattr(opener, 'close'):
                         opener.close()
-                        
+
             self.error_times = 0
         except LoginFailure, e:
             if not self._login(opener):
@@ -265,8 +278,10 @@ class BasicWorkerJobLoader(JobLoader):
                         puts.append(url)
                     else:
                         forces.append(url)
-                self.mq.put(puts)
-                self.mq.put(forces, force=True)
+                # self.mq.put(puts)
+                # self.mq.put(forces, force=True)
+                self.redismq.rpush(REDIS_UID, *puts)
+                # self.redismq.rpush(REDIS_KEY, forces)
                 if hasattr(opener, 'close'):
                     opener.close()
                 
@@ -316,7 +331,11 @@ class BasicWorkerJobLoader(JobLoader):
             
             stopped = False
             while not self.stopped and not stopped:
-                obj = self.mq.get()
+                # obj = self.mq.get()
+                res = self.redismq.blpop(REDIS_UID)
+                obj = res[1]
+                if self.redismq.sismember(REDIS_CRAWLED, obj):
+                    continue
                 self.info_logger.info('start to get %s' % obj)
                 if obj is None:
                     time.sleep(TIME_SLEEP)
@@ -327,7 +346,8 @@ class BasicWorkerJobLoader(JobLoader):
                 
                 self.executings.append(obj)
                 stopped = self.execute(obj, opener=opener)
-                
+                self.redismq.sadd(REDIS_CRAWLED, obj)
+
         try:
             threads = [threading.Thread(target=_call) for _ in range(self.instances)]
             if not stop_when_finish:
@@ -341,7 +361,7 @@ class BasicWorkerJobLoader(JobLoader):
             
     def run(self):
         raise NotImplementedError
-    
+
     def __enter__(self):
         return self
     
@@ -396,7 +416,8 @@ class StandaloneWorkerJobLoader(LimitionJobLoader, BasicWorkerJobLoader):
             
     def run(self, put_starts=True):
         if put_starts:
-            self.mq.put(self.job.starts)
+            # self.mq.put(self.job.starts)
+            self.redismq.lpush(REDIS_UID, *self.job.starts)
         self._run(stop_when_finish=True)
         
 class WorkerJobLoader(BasicWorkerJobLoader):

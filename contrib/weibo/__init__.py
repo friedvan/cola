@@ -51,13 +51,14 @@ url_patterns = UrlPatterns(
 )
 
 def get_job():
-    print sys.argv[1]
-    starts = load_start(sys.argv[1])
-    print len(starts)
+    # print sys.argv[1]
+    # starts = load_start(sys.argv[1])
+    # print len(starts)
     return Job('sina weibo crawler', url_patterns, MechanizeOpener, starts,
-               is_bundle=True, unit_cls=WeiboUserBundle, 
-               instances=instances, debug=False, user_conf=user_config,
+               is_bundle=True, unit_cls=WeiboUserBundle,
+               instances=instances, debug=True, user_conf=user_config,
                login_hook=login_hook)
+
 
 def load_start(src):
     with open(src) as fin:
