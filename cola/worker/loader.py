@@ -50,6 +50,8 @@ UNLIMIT_BLOOM_FILTER_CAPACITY = 1000000
 
 REDIS_UID = 'cola:uids'
 REDIS_CRAWLED = 'cola:crawled'
+REDIS_HOST = 'localhost'
+REDIS_PORT = '6379'
 
 class JobWorkerRunning(Exception): pass
 
@@ -139,7 +141,7 @@ class BasicWorkerJobLoader(JobLoader):
         self.mq.init_store(mq_store_dir, mq_backup_dir,
                            verify_exists_hook=self._init_bloom_filter())
 
-        self.redismq = redis.Redis(host='192.168.23.132')
+        self.redismq = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
 
 
     
