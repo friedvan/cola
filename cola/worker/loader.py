@@ -236,9 +236,14 @@ class BasicWorkerJobLoader(JobLoader):
                 if parser_cls is not None:
                     self._require_budget()
                     self.pages_size += 1
-                    time.sleep(random.random())  # sleep a random interval within 1 second
-                    next_urls, bundles = parser_cls(opener, url, bundle=bundle, logger=self.logger, 
+
+                    try:
+                        next_urls, bundles = parser_cls(opener, url, bundle=bundle, logger=self.logger,
                                                     **options).parse()
+                        time.sleep(random.random())  # sleep a random interval within 1 second
+                    except:
+                        self.logger.error('parse error, sleep a while within 5 min')
+                        time.sleep(random.randint(1, 60*5))  # sleep a random interval within 5 min
                     next_urls = list(self.job.url_patterns.matches(next_urls))
                     next_urls.extend(urls)
                     urls = next_urls
@@ -249,7 +254,6 @@ class BasicWorkerJobLoader(JobLoader):
                         # self.redismq.rpush(REDIS_KEY, [str(b) for b in bundles if b.force is True])
                     if hasattr(opener, 'close'):
                         opener.close()
-
             self.error_times = 0
         except LoginFailure, e:
             if not self._login(opener):

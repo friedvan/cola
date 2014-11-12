@@ -41,8 +41,8 @@ class WeiboUserBundle(Bundle):
     def urls(self):
         start = int(time.time() * (10**6))
         return [
-            # 'http://weibo.com/p/100505%s/info' % self.uid, # magic 100505 prefix
-            # 'http://weibo.com/%s/follow' % self.uid,
+            'http://weibo.com/p/100505%s/info' % self.uid, # magic 100505 prefix
+            'http://weibo.com/%s/follow' % self.uid,
             'http://weibo.com/aj/mblog/mbloglist?uid=%s&_k=%s' % (self.uid, start),
 
             #'http://weibo.com/100505%s/info' % self.uid,
