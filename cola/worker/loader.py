@@ -231,8 +231,11 @@ class BasicWorkerJobLoader(JobLoader):
             while len(urls) > 0 and not self.stopped:
                 url = urls.pop(0)
                 self.info_logger.info('get %s url: %s' % (bundle.label, url))
-                
-                parser_cls, options = self.job.url_patterns.get_parser(url, options=True)
+
+                try:
+                    parser_cls, options = self.job.url_patterns.get_parser(url, options=True)
+                except TypeError:
+                    break
                 if parser_cls is not None:
                     self._require_budget()
                     self.pages_size += 1
