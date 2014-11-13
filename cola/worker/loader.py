@@ -203,7 +203,7 @@ class BasicWorkerJobLoader(JobLoader):
                 # raise ConfigurationError('If login_hook set, config files must contains `login`')
                 setattr(self.ctx.job, 'login', [])
             #get a new account from redis
-            account = json.loads(self.redismq.blpop(REDIS_WEIBO_ACCOUNT))
+            account = json.loads(self.redismq.blpop(REDIS_WEIBO_ACCOUNT)[1])
             self.ctx.job.login.append(account)
             kw = random.choice(self.ctx.job.login)
             login_result = self.job.login_hook(opener, **kw)

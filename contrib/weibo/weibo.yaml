@@ -1,6 +1,6 @@
 job:
   db: sina
-  mode: url # also can be `bundle`
+  mode: bundle # also can be `bundle`
   size: 100   # the destination (including bundle or url) size
   limit: 0  # 0 means no restrictions, if greater than 0, means webpages opened per minute.
   master_port: 12104
@@ -9,9 +9,9 @@ job:
   mongo:
     host: localhost
     port: 27017
-  login:
-    - username: 287535211@qq.com # username
-      password: 564335491 # password
+#  login:
+#    - username: 287535211@qq.com # username
+#      password: 564335491 # password
   starts:
     - uid: 5126161537
   fetch:
