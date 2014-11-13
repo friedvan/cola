@@ -29,6 +29,7 @@ import socket
 import logging
 
 import redis
+import json
 
 from cola.core.mq import MessageQueue
 from cola.core.bloomfilter import FileBloomFilter
@@ -39,6 +40,7 @@ from cola.core.logs import get_logger
 from cola.core.utils import import_job
 from cola.core.errors import LoginFailure
 from cola.job.loader import JobLoader, LimitionJobLoader
+from contrib.weibo.login import WeiboLoginFailure
 
 MAX_THREADS_SIZE = 10
 TIME_SLEEP = 10
@@ -48,10 +50,12 @@ MAX_ERROR_TIMES = 5
 UNLIMIT_BLOOM_FILTER_CAPACITY = 1000000
 
 
+REDIS_HOST = '112.124.4.10'
+REDIS_PORT = '6379'
 REDIS_UID = 'cola:uids'
 REDIS_CRAWLED = 'cola:crawled'
-REDIS_HOST = 'localhost'
-REDIS_PORT = '6379'
+REDIS_WEIBO_ACCOUNT = 'cola:account'
+REDIS_WEIBO_BAN = 'cola:ban'
 
 class JobWorkerRunning(Exception): pass
 
@@ -196,7 +200,11 @@ class BasicWorkerJobLoader(JobLoader):
         if self.job.login_hook is not None:
             if 'login' not in self.ctx.job or \
                 not isinstance(self.ctx.job.login, list):
-                raise ConfigurationError('If login_hook set, config files must contains `login`')
+                # raise ConfigurationError('If login_hook set, config files must contains `login`')
+                setattr(self.ctx.job, 'login', [])
+            #get a new account from redis
+            account = json.loads(self.redismq.blpop(REDIS_WEIBO_ACCOUNT))
+            self.ctx.job.login.append(account)
             kw = random.choice(self.ctx.job.login)
             login_result = self.job.login_hook(opener, **kw)
             if isinstance(login_result, tuple) and len(login_result) == 2:
@@ -237,7 +245,7 @@ class BasicWorkerJobLoader(JobLoader):
                 try:
                     parser_cls, options = self.job.url_patterns.get_parser(url, options=True)
                 except TypeError:
-                    break
+                    continue
                 if parser_cls is not None:
                     self._require_budget()
                     self.pages_size += 1
@@ -247,8 +255,11 @@ class BasicWorkerJobLoader(JobLoader):
                                                     **options).parse()
                         time.sleep(random.random())  # sleep a random interval within 1 second
                     except:
-                        self.logger.error('parse error, sleep a while within 5 min')
-                        time.sleep(random.randint(1, 60*5))  # sleep a random interval within 5 min
+                        self.logger.error('parse error, account may be blocked, change to another account')
+                        self.redismq.rpush(REDIS_WEIBO_BAN, json.dumps(self.ctx.job.login.pop()))
+                        time.sleep(random.randint(1, 60*1))  # sleep a random interval within 1 min
+                        raise WeiboLoginFailure
+
                     next_urls = list(self.job.url_patterns.matches(next_urls))
                     next_urls.extend(urls)
                     urls = next_urls
