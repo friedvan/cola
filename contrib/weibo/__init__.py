@@ -99,7 +99,7 @@ def autohalt(filename):
         if len(ps_strings) < 2:
             mailto_list = ["287535211@qq.com"]
             send_mail(mailto_list, "process stop, restart ", str(time.time()))
-            cmds = ['python', '__init__.py']
+            cmds = ['python', filename]
             subprocess.Popen(cmds)
             # return
         else:
@@ -109,6 +109,6 @@ def autohalt(filename):
 if __name__ == "__main__":
     from cola.worker.loader import load_job
     load_job(os.path.dirname(os.path.abspath(__file__)))
-    autohalt()
+    autohalt('__init__.py')
 
 
