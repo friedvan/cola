@@ -435,7 +435,7 @@ class StandaloneWorkerJobLoader(LimitionJobLoader, BasicWorkerJobLoader):
                 self.budget -= 1
                 return
             
-    def run(self, put_starts=True):
+    def run(self, put_starts=False):
         if put_starts:
             # self.mq.put(self.job.starts)
             self.redismq.lpush(REDIS_UID, *self.job.starts)
