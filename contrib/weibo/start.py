@@ -56,7 +56,7 @@ def get_my_ip():
 if __name__ == '__main__':
     count = 0
     restart = 0
-    p = subprocess.Popen('python __init__.py', stdout=sys.stdout, stdin=sys.stdin, stderr=sys.stderr)
+    p = subprocess.Popen(['python', '__init__.py'], stdout=sys.stdout, stdin=sys.stdin, stderr=sys.stderr)
     while True:
         code = p.poll()
         if code is None:
@@ -65,7 +65,7 @@ if __name__ == '__main__':
         else:
             restart += 1
             print 'finish with code %s, restarting' % code
-            p = subprocess.Popen('python __init__.py', stdout=sys.stdout, stdin=sys.stdin, stderr=sys.stderr)
+            p = subprocess.Popen(['python', '__init__.py'], stdout=sys.stdout, stdin=sys.stdin, stderr=sys.stderr)
             send_mail(
                 ['287535211@qq.com'],
                 "error crawling weibo",
