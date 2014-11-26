@@ -14,7 +14,7 @@ def load_accounts_from_csv(fname):
     return accounts
 
 
-if '__name__' == '__main__':
+if __name__ == '__main__':
     rds = redis.Redis(host=REDIS_HOST)
     accounts = load_accounts_from_csv('weibo_accounts.csv')
     for act in accounts:

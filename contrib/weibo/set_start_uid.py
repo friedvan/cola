@@ -7,7 +7,7 @@ import sys
 REDIS_HOST = 'localhost'
 
 
-if '__name__' == '__main__':
+if __name__ == '__main__':
     if len(sys.argv) < 2:
         print 'usage: python set_start_uid.py weibo_uid'
         sys.exit(0)
