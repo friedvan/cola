@@ -12,7 +12,7 @@ if '__name__' == '__main__':
         print 'usage: python set_start_uid.py weibo_uid'
         sys.exit(0)
     rds = redis.Redis(host=REDIS_HOST)
-    start_uid = sys.argv[2]
+    start_uid = sys.argv[1]
     try:
         int(start_uid)
         rds.rpush('cola:uids', start_uid)
