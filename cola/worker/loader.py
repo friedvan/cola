@@ -250,15 +250,8 @@ class BasicWorkerJobLoader(JobLoader):
                     self._require_budget()
                     self.pages_size += 1
 
-                    try:
-                        next_urls, bundles = parser_cls(opener, url, bundle=bundle, logger=self.logger,
+                    next_urls, bundles = parser_cls(opener, url, bundle=bundle, logger=self.logger,
                                                     **options).parse()
-                        time.sleep(random.random())  # sleep a random interval within 1 second
-                    except:
-                        self.logger.error('parse error, account may be blocked, change to another account')
-                        self.redismq.rpush(REDIS_WEIBO_BAN, json.dumps(self.ctx.job.login.pop()))
-                        time.sleep(random.randint(1, 60*1))  # sleep a random interval within 1 min
-                        raise WeiboLoginFailure
 
                     next_urls = list(self.job.url_patterns.matches(next_urls))
                     next_urls.extend(urls)
@@ -367,6 +360,13 @@ class BasicWorkerJobLoader(JobLoader):
                 
                 self.executings.append(obj)
                 stopped = self.execute(obj, opener=opener)
+                if stopped:
+                    if not self._login(opener):
+                        self.error_times += 1
+                        self._log_error(obj, 'account blocked, change account')
+                        self.error(obj)
+                    stopped = self.execute(obj, opener=opener)
+
                 self.redismq.sadd(REDIS_CRAWLED, obj)
 
         try:
