@@ -249,13 +249,8 @@ class BasicWorkerJobLoader(JobLoader):
                 if parser_cls is not None:
                     self._require_budget()
                     self.pages_size += 1
-
-                    try:
-                        next_urls, bundles = parser_cls(opener, url, bundle=bundle, logger=self.logger,
+                    next_urls, bundles = parser_cls(opener, url, bundle=bundle, logger=self.logger,
                                                     **options).parse()
-                    except:
-                        continue
-
                     next_urls = list(self.job.url_patterns.matches(next_urls))
                     next_urls.extend(urls)
                     urls = next_urls
@@ -363,13 +358,6 @@ class BasicWorkerJobLoader(JobLoader):
                 
                 self.executings.append(obj)
                 stopped = self.execute(obj, opener=opener)
-                if stopped:
-                    if not self._login(opener):
-                        self.error_times += 1
-                        self._log_error(obj, 'account blocked, change account')
-                        self.error(obj)
-                    stopped = self.execute(obj, opener=opener)
-
                 self.redismq.sadd(REDIS_CRAWLED, obj)
 
         try:

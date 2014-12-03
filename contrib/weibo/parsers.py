@@ -67,6 +67,8 @@ class WeiboParser(Parser):
             if dest_url.startswith('http://weibo.com/sorry?usernotexists'):
                 self.bundle.exists = False
                 return False
+            if dest_url.startswith('http://sass.weibo.com/unfreeze'):
+                raise WeiboLoginFailure('Account blocked, change to another account')
         return True
     
     def get_weibo_user(self):
