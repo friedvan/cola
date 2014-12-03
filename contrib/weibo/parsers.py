@@ -560,6 +560,9 @@ class UserFriendParser(WeiboParser):
         except AttributeError, e:
             if br.geturl().startswith('http://e.weibo.com'):
                 return [], []
+            home_url = 'http://www.weibo.com'
+            if not self.check(home_url, self.opener.browse_open(home_url)):
+                return [], []
             return self._error(url, e)
         if ul is None:
             urls = []
