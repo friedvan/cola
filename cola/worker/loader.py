@@ -250,8 +250,11 @@ class BasicWorkerJobLoader(JobLoader):
                     self._require_budget()
                     self.pages_size += 1
 
-                    next_urls, bundles = parser_cls(opener, url, bundle=bundle, logger=self.logger,
+                    try:
+                        next_urls, bundles = parser_cls(opener, url, bundle=bundle, logger=self.logger,
                                                     **options).parse()
+                    except:
+                        continue
 
                     next_urls = list(self.job.url_patterns.matches(next_urls))
                     next_urls.extend(urls)
